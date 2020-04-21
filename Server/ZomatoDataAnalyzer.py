@@ -21,24 +21,8 @@ from folium.plugins import HeatMap
 import folium
 import re
 
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-from keras.models import Sequential
-from keras.layers import Dense, Embedding, LSTM, SpatialDropout1D
-from sklearn.model_selection import train_test_split
-from nltk import word_tokenize
-from sklearn.feature_extraction.text import TfidfVectorizer
-import gensim
-from collections import Counter
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-import matplotlib.colors as mcolors
-from sklearn.manifold import TSNE
-from gensim.models import word2vec
-import nltk
 
-import warnings
-warnings.filterwarnings("ignore")
+
 
 try:
     city_name = sys.argv[1]
@@ -109,12 +93,6 @@ class Restaurant:
 class ZomatoDatasetCreator:
     def __init__(self, city_name):
         
-        # self.API_KEYS = ["1c1827e986cbb720c34bc661fdbd8884", 
-        #                  "765fdb97e275ccf353c49c3c2ec68a7b",
-        #                  "151799c34aa8943e8028a167e43f9588"]
-
-        ## Abhi naya bana ke do daal do isme kal purana wala bhi append kar dena list me
-        ## Basically ek city ke liye around 1500 calls hote hai so 
         self.API_KEYS = ["014af0114a43afec41812542b307726b", 
                         "1c1827e986cbb720c34bc661fdbd8884", 
                           "765fdb97e275ccf353c49c3c2ec68a7b",
@@ -280,25 +258,25 @@ class ZomatoDatasetCreator:
 
 
 
-#data_creator = ZomatoDatasetCreator(city_name)
-#data_creator.search_city()
-#data_creator.fetch_all_restaurants()
-#data_creator.populate_reviews()
-#data_creator.populate_dish_liked()
-#data_list = data_creator.all_restaurants
+data_creator = ZomatoDatasetCreator(city_name)
+data_creator.search_city()
+data_creator.fetch_all_restaurants()
+data_creator.populate_reviews()
+data_creator.populate_dish_liked()
+data_list = data_creator.all_restaurants
 
-#np_data  = np.empty((len(data_list), len(data_list[0].get_row())), dtype=object)
-#for i in tqdm(range(len(data_list[:]))):
-  #rest = data_list[i]
-  #np_data[i] = rest.get_row()
-
-
-#df = pd.DataFrame(np_data, columns = ['url', 'address', 'name', 'online_order', 'book_table', 'rate', 'votes', 'phone', 'location',
-                                      #'rest_type', 'dish_liked', 'cuisines', 'approx_cost', 'reviews', 'latitude', 'longitude', 'location'])
+np_data  = np.empty((len(data_list), len(data_list[0].get_row())), dtype=object)
+for i in tqdm(range(len(data_list[:]))):
+  rest = data_list[i]
+  np_data[i] = rest.get_row()
 
 
-#os.mkdir(city_name)
-#df.to_csv(city_name+'/data.csv')
+df = pd.DataFrame(np_data, columns = ['url', 'address', 'name', 'online_order', 'book_table', 'rate', 'votes', 'phone', 'location',
+                                      'rest_type', 'dish_liked', 'cuisines', 'approx_cost', 'reviews', 'latitude', 'longitude', 'location'])
+
+
+os.mkdir(city_name)
+df.to_csv(city_name+'/data.csv')
 
 df = pd.read_csv(city_name + '/data.csv');
 
@@ -462,11 +440,6 @@ plt.close()
 image_name = 'Location Histogram'
 fig_dat[image_name] = {'name': image_name, 'longtext': 'Food Hotspots in the city',
                        'path': 'img6.png', 'type':'image'}
-
-
-
-
-
 
 
 
@@ -668,5 +641,6 @@ with open(city_name+'/data.json', 'w') as fp:
 
 print('\n\n******DataAnalyzer has analzyed all the data. Now launcing data uplaoder*****')
 
-os.execl(sys.executable, 'node', "", *sys.argv[1:])
-    os._exit(0)
+from Naked.toolshed.shell import execute_js, muterun_js
+
+result = execute_js('DataUploader.js' + ' ' + city_name)

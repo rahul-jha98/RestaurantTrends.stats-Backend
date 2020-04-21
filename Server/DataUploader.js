@@ -29,16 +29,20 @@ process.argv.forEach(function (val, index, array) {
 let rawdata = fs.readFileSync(city_name + '/data.json');
 let jsondata = JSON.parse(rawdata);
 
-
-var upload = async (localFile, remoteFile) => {
+var upload = async (localFile, remoteFile, type) => {
 
   let uuid = UUID();
-
+  var content = '';
+  if (type == 'image') {
+      content = 'image/png';
+  } else {
+      content = 'text/html';
+  }
   return bucket.upload(localFile, {
         destination: remoteFile,
         uploadType: "media",
         metadata: {
-          contentType: 'image/png',
+          contentType: content,
           metadata: {
             firebaseStorageDownloadTokens: uuid
           }
@@ -59,26 +63,29 @@ maindata = jsondata.data;
 
 async function handleUpload(key) {
     path = maindata[key].path
-    await upload(path, path).then(url => {
+    await upload(city_name + '/' + path, city_name + '/' + path).then(url => {
         maindata[key].url = url;
-        console.log(jsondata)
     })
     
 }
 
 
 async function manageAll(allKeys) {
+    var i = 0;
+    var total = allKeys.length;
     for(const key of allKeys) {
         await handleUpload(key);
+        i = i + 1;
+        console.log("Uploded " + i + " of " + total);
     ;};
     
     axios.put(databaseURL + city_name + ".json", jsondata).then(res => {
-        console.log('Uploaded data')
+        console.log('\n\nAll the data has been uploaded to firebase. ')
+        console.log(city_name + " can now be viewed in website")
     }).catch(error => {
         console.log(error)
     }) 
 }
 
 manageAll(allkeys)
-
 
