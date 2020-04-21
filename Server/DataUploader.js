@@ -72,7 +72,7 @@ async function manageAll(allKeys) {
         await handleUpload(key);
     ;};
     
-    axios.put(databaseURL + "Test.json", jsondata).then(res => {
+    axios.put(databaseURL + city_name + ".json", jsondata).then(res => {
         console.log('Uploaded data')
     }).catch(error => {
         console.log(error)

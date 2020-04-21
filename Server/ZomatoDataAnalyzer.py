@@ -37,10 +37,11 @@ from sklearn.manifold import TSNE
 from gensim.models import word2vec
 import nltk
 
-
+import warnings
+warnings.filterwarnings("ignore")
 
 try:
-    city_name = sys.srgv[1]
+    city_name = sys.argv[1]
 except Exception:
     city_name = 'Allahabad'
 
@@ -279,24 +280,393 @@ class ZomatoDatasetCreator:
 
 
 
-data_creator = ZomatoDatasetCreator(city_name)
-data_creator.search_city()
-data_creator.fetch_all_restaurants()
-data_creator.populate_reviews()
-data_creator.populate_dish_liked()
-data_list = data_creator.all_restaurants
+#data_creator = ZomatoDatasetCreator(city_name)
+#data_creator.search_city()
+#data_creator.fetch_all_restaurants()
+#data_creator.populate_reviews()
+#data_creator.populate_dish_liked()
+#data_list = data_creator.all_restaurants
 
-np_data  = np.empty((len(data_list), len(data_list[0].get_row())), dtype=object)
-for i in tqdm(range(len(data_list[:]))):
-  rest = data_list[i]
-  np_data[i] = rest.get_row()
-
-
-df = pd.DataFrame(np_data, columns = ['url', 'address', 'name', 'online_order', 'book_table', 'rate', 'votes', 'phone', 'location',
-                                      'rest_type', 'dish_liked', 'cuisines', 'approx_cost', 'reviews', 'latitude', 'longitude', 'location'])
+#np_data  = np.empty((len(data_list), len(data_list[0].get_row())), dtype=object)
+#for i in tqdm(range(len(data_list[:]))):
+  #rest = data_list[i]
+  #np_data[i] = rest.get_row()
 
 
-os.mkdir(city_name)
-df.to_csv(city_name+'/data.csv')
+#df = pd.DataFrame(np_data, columns = ['url', 'address', 'name', 'online_order', 'book_table', 'rate', 'votes', 'phone', 'location',
+                                      #'rest_type', 'dish_liked', 'cuisines', 'approx_cost', 'reviews', 'latitude', 'longitude', 'location'])
 
 
+#os.mkdir(city_name)
+#df.to_csv(city_name+'/data.csv')
+
+df = pd.read_csv(city_name + '/data.csv');
+
+fig_dat = {}
+
+plt.figure(figsize=(10,10))
+chains=df['name'].value_counts()[:20]
+sns.barplot(x=chains,y=chains.index,palette='deep')
+# plt.title("Most famous restaurants chains in Bengaluru")
+plt.xlabel("Number of outlets")
+plt.savefig(city_name+'/img1.png')
+plt.close()
+image_name = 'Number of Outlets'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Histogram displaying most famous restaurants chains in ' + city_name,
+                       'path': 'img1.png', 'type':'image'}
+
+x=df['online_order'].value_counts()
+colors = ['#FEBFB3', '#E1396C']
+
+trace=go.Pie(labels=x.index,values=x,textinfo="value",
+            marker=dict(colors=colors, 
+                           line=dict(color='#000000', width=2)))
+layout=go.Layout(title="",width=500,height=500)
+fig=go.Figure(data=[trace])
+fig.write_html(city_name+"/html1.html", auto_open = False)
+
+image_name = 'Order Type'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Pie Chart comparing online and offline orders',
+                       'path': 'html1.html', 'type':'html'}
+
+
+py.plot(fig, auto_open = False)
+
+
+x=df['book_table'].value_counts()
+colors = ['#96D38C', '#D0F9B1']
+
+trace=go.Pie(labels=x.index,values=x,textinfo="value",
+            marker=dict(colors=colors, 
+                           line=dict(color='#000000', width=2)))
+layout=go.Layout(title="Table booking",width=500,height=500)
+fig=go.Figure(data=[trace])
+
+fig.write_html(city_name+"/html2.html")
+
+image_name = 'Booking Type'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Pie chart showing booking types',
+                       'path': 'html2.html', 'type':'html'}
+
+py.plot(fig, auto_open = False)
+
+plt.figure(figsize=(10,10))
+rating=df['rate'].dropna().apply(lambda x : float(x.split('/')[0]) if (len(x)>3)  else np.nan ).dropna()
+sns.distplot(rating,bins=20)
+plt.savefig(city_name+'/img2.png')
+plt.close()
+
+image_name = 'Histogram of Ratings'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Histogram displaying most famous restaurants chains in ' + city_name,
+                       'path': 'img2.png', 'type':'image'}
+
+cost_dist=df[['rate','approx_cost','online_order']].dropna()
+cost_dist['rate']=cost_dist['rate'].apply(lambda x: float(x.split('/')[0]) if len(x)>3 else 0)
+
+plt.figure(figsize=(10,10))
+sns.scatterplot(x="rate",y='approx_cost',hue='online_order',data=cost_dist)
+plt.savefig(city_name+'/img3.png')
+
+plt.close()
+
+image_name = 'Approx cost for two'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Approximate cost for two people in the restaurant',
+                       'path': 'img3.png', 'type':'image'}
+
+
+plt.figure(figsize=(10,10))
+sns.distplot(cost_dist['approx_cost'])
+plt.savefig(city_name+'/img4.png')
+
+plt.close()
+
+image_name = 'Histogram: Approx cost for two'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Histogram plot of approximate cost for two people in the restaurant',
+                       'path': 'img4.png', 'type':'image'}
+
+
+votes_yes=df[df['online_order']=="Yes"]['votes']
+trace0=go.Box(y=votes_yes,name="accepting online orders",
+              marker = dict(
+        color = 'rgb(214, 12, 140)',
+    ))
+
+votes_no=df[df['online_order']=="No"]['votes']
+trace1=go.Box(y=votes_no,name="Not accepting online orders",
+              marker = dict(
+        color = 'rgb(0, 128, 128)',
+    ))
+
+layout = go.Layout(
+    title = "Box Plots of votes",width=700,height=700
+)
+
+data=[trace0,trace1]
+fig=go.Figure(data=data,layout=layout)
+
+fig.write_html(city_name+"/html3.html")
+
+image_name = 'Votes'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Box plots of votes for online vs offline orders',
+                       'path': 'html3.html', 'type':'html'}
+
+
+py.plot(fig, auto_open = False)
+
+
+plt.figure(figsize=(10,10))
+rest=df['rest_type'].value_counts()[:20]
+sns.barplot(rest,rest.index)
+plt.xlabel("count")
+plt.savefig(city_name+'/img5.png')
+
+
+image_name = 'Restaurant Types'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Types of restaurants in the city',
+                       'path': 'img5.png', 'type':'image'}
+
+
+trace0=go.Box(y=df['approx_cost'],name="accepting online orders",
+              marker = dict(
+        color = 'rgb(214, 12, 140)',
+    ))
+data=[trace0]
+layout=go.Layout(title="Box plot of approximate cost",width=700,height=700,yaxis=dict(title="Price"))
+fig=go.Figure(data=data,layout=layout)
+
+
+fig.write_html(city_name+"/html4.html")
+
+image_name = 'Approx Cost'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Box plot for approximate cost for two people',
+                       'path': 'html4.html', 'type':'html'}
+
+py.plot(fig, auto_open = False)
+
+
+cost_dist=df[['rate','approx_cost','location','name','rest_type']].dropna()
+cost_dist['rate']=cost_dist['rate'].apply(lambda x: float(x.split('/')[0]) if len(x)>3 else 0)
+
+def return_budget(location,rest, cost_for_two):
+    budget=cost_dist[(cost_dist['approx_cost']<=cost_for_two) & (cost_dist['location']==location) & 
+                     (cost_dist['rate']>4) & (cost_dist['rest_type']==rest)]
+    return(budget['name'].unique())
+
+
+plt.figure(figsize=(10,10))
+Rest_locations=df['location'].value_counts()[:20]
+sns.barplot(Rest_locations,Rest_locations.index,palette="rocket")
+plt.savefig(city_name+'/img6.png')
+plt.close()
+
+image_name = 'Location Histogram'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Food Hotspots in the city',
+                       'path': 'img6.png', 'type':'image'}
+
+
+
+
+
+
+
+
+
+df_1=df.groupby(['location','cuisines']).agg('count')
+data=df_1.sort_values(['url'],ascending=False).groupby(['location'],
+                as_index=False).apply(lambda x : x.sort_values(by="url",ascending=False).head(3))['url'].reset_index().rename(columns={'url':'count'})
+
+
+locations=pd.DataFrame({"Name":df['location'].unique()})
+locations['Name']=locations['Name'].apply(lambda x: city_name + " " + str(x))
+lat_lon=[]
+geolocator=Nominatim(user_agent="app")
+for ind in tqdm(range(locations['Name'].shape[0])):
+    location = locations['Name'][ind]
+    try:
+      location = geolocator.geocode(location)
+    except:
+      location = None
+    if location is None:
+        lat_lon.append(np.nan)
+    else:    
+        geo=(location.latitude,location.longitude)
+        lat_lon.append(geo)
+
+
+locations['geo_loc']=lat_lon
+
+locations["Name"]=locations['Name'].apply(lambda x :  x.replace(city_name,"")[1:])
+
+Rest_locations=pd.DataFrame(df['location'].value_counts().reset_index())
+Rest_locations.columns=['Name','count']
+Rest_locations=Rest_locations.merge(locations,on='Name',how="left").dropna()
+
+def generateBaseMap(default_location=[25.43, 81.84], default_zoom_start=12):
+    base_map = folium.Map(location=default_location, control_scale=True, zoom_start=default_zoom_start)
+    return base_map
+
+lat,lon=zip(*np.array(Rest_locations['geo_loc']))
+Rest_locations['lat']=lat
+Rest_locations['lon']=lon
+basemap=generateBaseMap()
+HeatMap(Rest_locations[['lat','lon','count']].values.tolist(),max_zoom=20,radius=15).add_to(basemap)
+
+basemap.save(city_name+'/html5.html')
+
+image_name = 'Restaurant count'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Heatmap of restaurant count in the city',
+                       'path': 'html5.html', 'type':'html'}
+
+
+plt.figure(figsize=(10,10))
+cuisines=df['cuisines'].value_counts()[:10]
+sns.barplot(cuisines,cuisines.index)
+plt.xlabel('Count')
+plt.savefig(city_name+'/img7.png')
+plt.close()
+image_name = 'Most Popular Cuisines'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Most popular cuisines in the city',
+                       'path': 'img7.png', 'type':'image'}
+
+
+def produce_data(col,name):
+    data= pd.DataFrame(df[df[col]==name].groupby(['location'],as_index=False)['url'].agg('count'))
+    data.columns=['Name','count']
+    print(data.head())
+    data=data.merge(locations,on="Name",how='left').dropna()
+    data['lan'],data['lon']=zip(*data['geo_loc'].values)
+    return data.drop(['geo_loc'],axis=1)
+
+
+North_India=produce_data('cuisines','North Indian')
+
+basemap=generateBaseMap()
+HeatMap(North_India[['lan','lon','count']].values.tolist(),max_zoom=20,radius=15).add_to(basemap)
+
+basemap.save(city_name+'/html6.html')
+
+image_name = 'North Indian Restaurants Count'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Heatmap of north indian restaurant count in the city',
+                       'path': 'html6.html', 'type':'html'}
+
+food=produce_data('cuisines','South Indian')
+basemap=generateBaseMap()
+HeatMap(food[['lan','lon','count']].values.tolist(),max_zoom=20,radius=15).add_to(basemap)
+
+basemap.save(city_name+'/html7.html')
+
+image_name = 'South Indian Restaurants Count'
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Heatmap of south indian restaurant count in the city',
+                       'path': 'html7.html', 'type':'html'}
+
+
+def produce_chains(name):
+    data_chain=pd.DataFrame(df[df["name"]==name]['location'].value_counts().reset_index())
+    data_chain.columns=['Name','count']
+    data_chain=data_chain.merge(locations,on="Name",how="left").dropna()
+    data_chain['lan'],data_chain['lon']=zip(*data_chain['geo_loc'].values)
+    return data_chain[['Name','count','lan','lon']]
+
+
+df_1=df.groupby(['rest_type','name']).agg('count')
+datas=df_1.sort_values(['url'],ascending=False).groupby(['rest_type'],
+                as_index=False).apply(lambda x : x.sort_values(by="url",ascending=False).head(3))['url'].reset_index().rename(columns={'url':'count'})
+
+
+df['dish_liked']=df['dish_liked'].apply(lambda x : x.split(',') if type(x)==str else [''])
+
+rest=df['rest_type'].value_counts()[:9].index
+def produce_wordcloud(rest):
+    
+    plt.figure(figsize=(20,30))
+    for i,r in enumerate(rest):
+        plt.subplot(3,3,i+1)
+        corpus=df[df['rest_type']==r]['dish_liked'].values.tolist()
+        corpus=','.join(x  for list_words in corpus for x in list_words)
+        
+        try:
+            wordcloud = WordCloud(max_font_size=None, background_color='white', collocations=False,
+                          width=1500, height=1500).generate(corpus)
+        except:
+            pass
+        
+        plt.imshow(wordcloud)
+        plt.title(r)
+        plt.axis("off")
+        
+    image_name = 'Popular dishes'
+    
+    plt.savefig(city_name+'/img8.png')
+    fig_dat[image_name] = {'name': image_name, 'longtext': 'Wordcloud of popular dishes',
+                           'path': 'img8.png', 'type':'image'}
+      
+produce_wordcloud(rest)
+
+all_ratings = []
+
+for name,ratings in tqdm(zip(df['name'],df['reviews'])):
+    ratings = eval(ratings)
+    for score, doc in ratings:
+        if score:
+            score = score.strip("Rated").strip()
+            doc = doc.strip('RATED').strip()
+            score = float(score)
+            all_ratings.append([name,score, doc])
+
+rating_df=pd.DataFrame(all_ratings,columns=['name','rating','review'])
+rating_df['review']=rating_df['review'].apply(lambda x : re.sub('[^a-zA-Z0-9\s]',"",x))
+
+rest=df['name'].value_counts()[:9].index
+#def produce_wordcloud(rest):
+    
+    #plt.figure(figsize=(20,20))
+    #for i,r in enumerate(rest):
+        #plt.subplot(3,3,i+1)
+        #corpus=rating_df[rating_df['name']==r]['review'].values.tolist()
+        #corpus=' '.join(x  for x in corpus)
+        #wordcloud = WordCloud(max_font_size=None, background_color='white', collocations=False,
+                      #width=1500, height=1500).generate(corpus)
+        #plt.imshow(wordcloud)
+        #plt.title(r)
+        #plt.axis("off")
+        
+
+    #image_name = 'Reviews'
+    
+    #plt.savefig(city_name+'/img9.png')
+    #fig_dat[image_name] = {'name': image_name, 'longtext': 'Wordcloud of reviews of various restaurants',
+                           #'path': 'img9.png', 'type':'image'} 
+        
+#produce_wordcloud(rest)
+
+
+plt.figure(figsize=(10,10))
+rating=rating_df['rating'].value_counts()
+sns.barplot(x=rating.index,y=rating)
+plt.xlabel("Ratings")
+plt.ylabel('count')
+
+
+image_name = 'Ratings'
+    
+plt.savefig(city_name+'/img10.png')
+fig_dat[image_name] = {'name': image_name, 'longtext': 'Ratings given by user',
+                       'path': 'img10.png', 'type':'image'}
+
+
+#fig_dat['ratings_hist'] = {}
+#fig_dat['ratings_hist']['title'] = "Histogram of Ratings"
+#fig_dat['ratings_hist']['long_text'] = "Histogram displaying most famous restaurants chains in " + city_name
+
+data = {}
+data['count'] = len(df)
+data['data'] = fig_dat
+
+with open(city_name+'/data.json', 'w') as fp:
+    json.dump(data, fp)
+
+
+print('\n\n******DataAnalyzer has analzyed all the data. Now launcing data uplaoder*****')
+
+os.execl(sys.executable, 'node', "", *sys.argv[1:])
+    os._exit(0)
