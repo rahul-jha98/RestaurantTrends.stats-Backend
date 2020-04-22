@@ -96,7 +96,7 @@ class ZomatoDatasetCreator:
         self.API_KEYS = ["014af0114a43afec41812542b307726b", 
                         "1c1827e986cbb720c34bc661fdbd8884", 
                           "765fdb97e275ccf353c49c3c2ec68a7b",
-                          "151799c34aa8943e8028a167e43f9588"
+                          
                          ]               
         self.BASE_URL = "https://developers.zomato.com/api/v2.1/"
         
@@ -257,11 +257,13 @@ class ZomatoDatasetCreator:
                 restaurant.set_dish_liked(remaining[start + 1:end])
 
 
-
+print('\n\n')
 data_creator = ZomatoDatasetCreator(city_name)
 data_creator.search_city()
 data_creator.fetch_all_restaurants()
+print('\nFetching reviews for all restaruants')
 data_creator.populate_reviews()
+print('\nFetching Top Dishes for all restaruants')
 data_creator.populate_dish_liked()
 data_list = data_creator.all_restaurants
 

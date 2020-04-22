@@ -2,6 +2,7 @@
 from flask import Flask,  request, render_template,Response
 import requests
 import json
+import os, sys
 
 
 app = Flask(__name__)
@@ -37,7 +38,14 @@ def api():
         
         city_name = search_city(city)
         if city != None:
-            return Response(json.dumps({"status":1, "city_name":city_name}))
+            pid = os.fork()
+            
+            if pid > 0:
+                return Response(json.dumps({"status":1, "city_name":city_name}))
+            else:
+                os.execl(sys.executable, 'python3', "ZomatoDataAnalyzer.py", city_name, *sys.argv[1:])
+                os._exit(0)
+            
         else:
             return Response(json.dumps({"status":0}))
                             
