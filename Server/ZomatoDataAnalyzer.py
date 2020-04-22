@@ -376,7 +376,7 @@ trace1=go.Box(y=votes_no,name="Not accepting online orders",
     ))
 
 layout = go.Layout(
-    title = "Box Plots of votes",width=700,height=700
+    title = "Box Plots of votes",width=700,height=500
 )
 
 data=[trace0,trace1]
@@ -409,7 +409,7 @@ trace0=go.Box(y=df['approx_cost'],name="accepting online orders",
         color = 'rgb(214, 12, 140)',
     ))
 data=[trace0]
-layout=go.Layout(title="Box plot of approximate cost",width=700,height=700,yaxis=dict(title="Price"))
+layout=go.Layout(title="Box plot of approximate cost",width=700,height=500,yaxis=dict(title="Price"))
 fig=go.Figure(data=data,layout=layout)
 
 
@@ -474,7 +474,11 @@ Rest_locations=pd.DataFrame(df['location'].value_counts().reset_index())
 Rest_locations.columns=['Name','count']
 Rest_locations=Rest_locations.merge(locations,on='Name',how="left").dropna()
 
-def generateBaseMap(default_location=[25.43, 81.84], default_zoom_start=12):
+zero_count = len(df[df.latitude == 0])
+lat_mean = df['latitude'].sum()/(len(df) - zero_count) 
+long_mean = df['longitude'].sum()/(len(df) - zero_count)
+
+def generateBaseMap(default_location=[lat_mean, long_mean], default_zoom_start=12):
     base_map = folium.Map(location=default_location, control_scale=True, zoom_start=default_zoom_start)
     return base_map
 
@@ -501,11 +505,9 @@ image_name = 'Most Popular Cuisines'
 fig_dat[image_name] = {'name': image_name, 'longtext': 'Most popular cuisines in the city',
                        'path': 'img7.png', 'type':'image'}
 
-
 def produce_data(col,name):
     data= pd.DataFrame(df[df[col]==name].groupby(['location'],as_index=False)['url'].agg('count'))
     data.columns=['Name','count']
-    print(data.head())
     data=data.merge(locations,on="Name",how='left').dropna()
     data['lan'],data['lon']=zip(*data['geo_loc'].values)
     return data.drop(['geo_loc'],axis=1)
@@ -545,13 +547,12 @@ df_1=df.groupby(['rest_type','name']).agg('count')
 datas=df_1.sort_values(['url'],ascending=False).groupby(['rest_type'],
                 as_index=False).apply(lambda x : x.sort_values(by="url",ascending=False).head(3))['url'].reset_index().rename(columns={'url':'count'})
 
-
 df['dish_liked']=df['dish_liked'].apply(lambda x : x.split(',') if type(x)==str else [''])
 
 rest=df['rest_type'].value_counts()[:9].index
 def produce_wordcloud(rest):
     
-    plt.figure(figsize=(20,30))
+    plt.figure(figsize=(30,30))
     for i,r in enumerate(rest):
         plt.subplot(3,3,i+1)
         corpus=df[df['rest_type']==r]['dish_liked'].values.tolist()
@@ -617,7 +618,7 @@ plt.figure(figsize=(10,10))
 rating=rating_df['rating'].value_counts()
 sns.barplot(x=rating.index,y=rating)
 plt.xlabel("Ratings")
-plt.ylabel('count')
+plt.ylabel('Count')
 
 
 image_name = 'Ratings'
