@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "@google-cloud/storage": "^4.7.0",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "uuid-v4": "^0.1.0"
   }
 }
